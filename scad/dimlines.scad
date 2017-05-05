@@ -1,5 +1,9 @@
-/* This is a second pass at dimension lines for OpenSCAD.
-
+/* Dimension lines for OpenSCAD.
+ *
+ * Copyright 2013-2016 Don Smiley
+ *
+ * SPDX-License-Identifier: MIT
+ *
  * What this program does:
  *
  * This program can draw lines with arrows and has a primitive dimensioning
@@ -13,6 +17,11 @@
  * =======================================================
  * Be sure to view this from above -- ctrl-4
  * =======================================================
+ *
+ * To use this program, copy this file into your OpenSCAD project or library
+ * directory and add "use <dimlines.scad>" to your OpenSCAD files. You may
+ * optionally modify the size constants DIM_FONTSIZE, DIM_LINE_WIDTH and
+ * DIM_HOLE_CENTER to match the size of your model.
  *
  * Available:
  *
@@ -60,10 +69,6 @@
  *
  *
  * Created by Don Smiley
- *
- *
- * This version no longer uses TextGenerator as now OpenSCAD supports text()
- * directly.
  *
  */
 
