@@ -99,7 +99,7 @@ DIM_HEIGHT = .01; // height of lines
 DIM_HOLE_CENTER = DIM_LINE_WIDTH * 6;
 
 // an approximation that sets the font size relative to the line widths
-DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
+DIM_FONTSIZE = DIM_LINE_WIDTH * 7;
 
 
 
@@ -203,17 +203,32 @@ module circle_center(radius, size=DIM_HOLE_CENTER, line_width=DIM_LINE_WIDTH) {
 function text_or_length(length, mytext) = (len(mytext) == 0)
     ? str(length): mytext;
 
+/**
+ * dim_text() - Add text label scaled to match size of dimension lines.
+ *
+ * Modifier for standard text() module. Performs two modification:
+ * - Scales text to match size of dimension lines.
+ * - Extrudes text into a 3D object so that dimensions don't mix 2D and 3D objects
+ *
+ * To use this modifier, place it immediately before a text() call.
+ */
+module scale_text()
+{
+    linear_extrude(DIM_HEIGHT, convexity=10)
+        scale([DIM_FONTSIZE/10, DIM_FONTSIZE/10])
+            children();
+}
+
 module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
                   mytext="") {
 
-    space = len(text_or_length(length, mytext)) * DIM_FONTSCALE * 7;
+    space = len(text_or_length(length, mytext)) * DIM_FONTSIZE;
 
     if (loc == DIM_CENTER) {
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
              left_arrow=true, right_arrow=false);
-        translate([length / 2, 0])
-        scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-        text(text_or_length(length, mytext), halign="center", valign="center");
+        translate([(length) / 2, 0]) scale_text()
+            text(text_or_length(length, mytext), halign="center", valign="center");
 
         translate([length / 2 + space / 2, 0, 0])
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
@@ -224,17 +239,15 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
             line(length=length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=true, right_arrow=true);
 
-            translate([-DIM_FONTSCALE * 7, 0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text_or_length(length, mytext), halign="right", valign="center");
+            translate([-DIM_FONTSIZE, 0]) scale_text()
+                text(text_or_length(length, mytext), halign="right", valign="center");
         } else {
             if (loc == DIM_RIGHT) {
                 line(length=length, width=line_width, height=DIM_HEIGHT,
                      left_arrow=true, right_arrow=true);
 
-                translate([length + DIM_FONTSCALE * 7, 0])
-                scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                text(text_or_length(length, mytext), valign="center");
+                translate([length+DIM_FONTSIZE, 0]) scale_text()
+                    text(text_or_length(length, mytext), valign="center");
             } else {
                 if (loc == DIM_OUTSIDE) {
 
@@ -242,9 +255,8 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
                          left_arrow=true, right_arrow=false);
 
-                    translate([(length) / 2, 0])
-                    scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                    text(text_or_length(length, mytext), halign="center", valign="center");
+                    translate([(length) / 2, 0]) scale_text()
+                        text(text_or_length(length, mytext), halign="center", valign="center");
 
                     translate([length, 0, 0])
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
@@ -266,8 +278,8 @@ module leader_line(angle, radius, angle_length, horz_line_length,
      * choice made by either DIM_RIGHT or DIM_LEFT
      */
 
-    text_length = len(text) * DIM_FONTSCALE * 6;
-    space = DIM_FONTSCALE * 6;
+    text_length = len(text) * DIM_FONTSIZE * 0.6;
+    space = DIM_FONTSIZE * 0.6;
 
     rotate([0, 0, angle])
     translate([radius, 0, 0])
@@ -283,9 +295,8 @@ module leader_line(angle, radius, angle_length, horz_line_length,
                  left_arrow=false, right_arrow=false);
 
             // Using centered text so that the 'do_circle' feature looks correct
-            translate([(horz_line_length + space + text_length/2),  0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text, halign="center", valign="center");
+            translate([horz_line_length + space + text_length/2, 0]) scale_text()
+                text(text, valign="center", halign="center");
 
             if (do_circle) {
                 translate([(horz_line_length + space + text_length/2),
@@ -303,9 +314,8 @@ module leader_line(angle, radius, angle_length, horz_line_length,
             line(length=horz_line_length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=false, right_arrow=false);
 
-            translate([-(horz_line_length + space), 0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text, halign="right", valign="center");
+            translate([-(horz_line_length + space), 0]) scale_text()
+                text(text, halign="right", valign="center");
 
         }
     }
@@ -335,8 +345,6 @@ module titleblock(lines, descs, details) {
      *               [startx, starty, horz/vert, text, size]]
     */
 
-    DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
-
     for (line = lines) {
         translate([line[0] * DIM_LINE_WIDTH,
                     line[1] * DIM_LINE_WIDTH,
@@ -357,14 +365,10 @@ module titleblock(lines, descs, details) {
     for (line = descs) {
         translate([line[0] * DIM_LINE_WIDTH, line[1] * DIM_LINE_WIDTH, 0])
         if (line[2] == DIM_VERT) {
-            rotate([0, 0, 90])
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            rotate([0, 0, 90]) scale_text()
+                text(line[3], size=10*line[4]);
         } else {
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         }
     }
 
@@ -372,13 +376,9 @@ module titleblock(lines, descs, details) {
         translate([line[0] * DIM_LINE_WIDTH, line[1] * DIM_LINE_WIDTH, 0])
         if (line[2] == DIM_VERT) {
             rotate([0, 0, 90])
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         } else {
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         }
     }
 
@@ -484,8 +484,6 @@ module sample_titleblock1() {
 
 module sample_revisionblock(revisions) {
 
-    DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
-
     // revision block headings
     row_height = 15;
     revision_width = 100;
@@ -545,8 +543,7 @@ module sample_revisionblock(revisions) {
             for (col = [0:2]) {
                 translate([(cols[col] + desc_x) * DIM_LINE_WIDTH,
                     ((row + 1) * row_height + desc_y) * DIM_LINE_WIDTH, 0])
-                scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                text(revisions[row][col]);
+                scale_text() text(revisions[row][col]);
             }
         }
 
