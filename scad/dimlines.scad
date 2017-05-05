@@ -86,19 +86,26 @@ DIM_LOWER_RIGHT = 3;
  * probably are going to need to adjust the parameters to fit the context of
  * your part.
  *
+ * DIM_FONTSIZE is the approximate hight of a single line of text. By default,
+ * all of the other sizes, like line width and arrow head size, are calculated
+ * relative to the font size. You can change DIM_FONTSIZE to a text height
+ * appropriate for your model, and all the other dimensions will be adjusted
+ * accordingly.
+ *
  * For example, the following parameters were used for a part 3.5 units long.
- * In addition, DIM_HEIGHT is a height meant to be slightly above your tallest
+ * DIM_FONTSIZE is set to about 5% of the object length, or 0.175 units. In
+ * addition, DIM_HEIGHT is a height meant to be slightly above your tallest
  * part.
  */
 
-DIM_LINE_WIDTH = .025; // width of dimension lines
+DIM_FONTSIZE = 0.175;
+
+// an approximation that sets the line widths relative to the font size
+DIM_LINE_WIDTH = DIM_FONTSIZE / 7; // width of dimension lines
 DIM_HEIGHT = .01; // height of lines
 
 // refers to the size of the cross within a circle
 DIM_HOLE_CENTER = DIM_LINE_WIDTH * 6;
-
-// an approximation that sets the font size relative to the line widths
-DIM_FONTSIZE = DIM_LINE_WIDTH * 7;
 
 
 module arrow(arr_points, arr_length, height) {
