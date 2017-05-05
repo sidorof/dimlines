@@ -92,7 +92,6 @@ DIM_LOWER_RIGHT = 3;
  */
 
 DIM_LINE_WIDTH = .025; // width of dimension lines
-DIM_SPACE = .1;  // a spacing value to make it easier to adjust line spacing etc
 DIM_HEIGHT = .01; // height of lines
 
 // refers to the size of the cross within a circle
@@ -101,9 +100,6 @@ DIM_HOLE_CENTER = DIM_LINE_WIDTH * 6;
 // an approximation that sets the font size relative to the line widths
 DIM_FONTSIZE = DIM_LINE_WIDTH * 7;
 
-
-
-OFFSET = .05; // added to the hole length to extend past the surface of the cube
 
 module arrow(arr_points, arr_length, height) {
     // arrow points to the left
