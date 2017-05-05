@@ -211,9 +211,9 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
     if (loc == DIM_CENTER) {
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
              left_arrow=true, right_arrow=false);
-        translate([(length) / 2 - space / 2 * .9, -DIM_FONTSCALE * 3, 0])
+        translate([length / 2, 0])
         scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-        text(text_or_length(length, mytext));
+        text(text_or_length(length, mytext), halign="center", valign="center");
 
         translate([length / 2 + space / 2, 0, 0])
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
@@ -224,17 +224,17 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
             line(length=length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=true, right_arrow=true);
 
-            translate([-space, -DIM_FONTSCALE * 3, 0])
+            translate([-DIM_FONTSCALE * 7, 0])
             scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text_or_length(length, mytext));
+            text(text_or_length(length, mytext), halign="right", valign="center");
         } else {
             if (loc == DIM_RIGHT) {
                 line(length=length, width=line_width, height=DIM_HEIGHT,
                      left_arrow=true, right_arrow=true);
 
-                translate([length + space, -DIM_FONTSCALE * 3, 0])
+                translate([length + DIM_FONTSCALE * 7, 0])
                 scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                text(text_or_length(length, mytext));
+                text(text_or_length(length, mytext), valign="center");
             } else {
                 if (loc == DIM_OUTSIDE) {
 
@@ -242,10 +242,9 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
                          left_arrow=true, right_arrow=false);
 
-                    translate([(length) / 2 - space / 2 * .9,
-                              -DIM_FONTSCALE * 3, 0])
+                    translate([(length) / 2, 0])
                     scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                    text(text_or_length(length, mytext));
+                    text(text_or_length(length, mytext), halign="center", valign="center");
 
                     translate([length, 0, 0])
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
@@ -283,9 +282,10 @@ module leader_line(angle, radius, angle_length, horz_line_length,
             line(length=horz_line_length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=false, right_arrow=false);
 
-            translate([(horz_line_length + space), -DIM_FONTSCALE * 3,  0])
+            // Using centered text so that the 'do_circle' feature looks correct
+            translate([(horz_line_length + space + text_length/2),  0])
             scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text);
+            text(text, halign="center", valign="center");
 
             if (do_circle) {
                 translate([(horz_line_length + space + text_length/2),
@@ -303,11 +303,9 @@ module leader_line(angle, radius, angle_length, horz_line_length,
             line(length=horz_line_length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=false, right_arrow=false);
 
-            translate([-(horz_line_length + space + text_length),
-                      -DIM_FONTSCALE * 3,
-                      0])
+            translate([-(horz_line_length + space), 0])
             scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text);
+            text(text, halign="right", valign="center");
 
         }
     }
