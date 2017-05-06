@@ -1,5 +1,9 @@
-/* This is a second pass at dimension lines for OpenSCAD.
-
+/* Dimension lines for OpenSCAD.
+ *
+ * Copyright 2013-2016 Don Smiley
+ *
+ * SPDX-License-Identifier: MIT
+ *
  * What this program does:
  *
  * This program can draw lines with arrows and has a primitive dimensioning
@@ -13,6 +17,11 @@
  * =======================================================
  * Be sure to view this from above -- ctrl-4
  * =======================================================
+ *
+ * To use this program, copy this file into your OpenSCAD project or library
+ * directory and add "use <dimlines.scad>" to your OpenSCAD files. You may
+ * optionally modify the size constants DIM_FONTSIZE, DIM_LINE_WIDTH and
+ * DIM_HOLE_CENTER to match the size of your model.
  *
  * Available:
  *
@@ -61,10 +70,6 @@
  *
  * Created by Don Smiley
  *
- *
- * This version no longer uses TextGenerator as now OpenSCAD supports text()
- * directly.
- *
  */
 
 
@@ -86,24 +91,27 @@ DIM_LOWER_RIGHT = 3;
  * probably are going to need to adjust the parameters to fit the context of
  * your part.
  *
+ * DIM_FONTSIZE is the approximate hight of a single line of text. By default,
+ * all of the other sizes, like line width and arrow head size, are calculated
+ * relative to the font size. You can change DIM_FONTSIZE to a text height
+ * appropriate for your model, and all the other dimensions will be adjusted
+ * accordingly.
+ *
  * For example, the following parameters were used for a part 3.5 units long.
- * In addition, DIM_HEIGHT is a height meant to be slightly above your tallest
+ * DIM_FONTSIZE is set to about 5% of the object length, or 0.175 units. In
+ * addition, DIM_HEIGHT is a height meant to be slightly above your tallest
  * part.
  */
 
-DIM_LINE_WIDTH = .025; // width of dimension lines
-DIM_SPACE = .1;  // a spacing value to make it easier to adjust line spacing etc
+DIM_FONTSIZE = 0.175;
+
+// an approximation that sets the line widths relative to the font size
+DIM_LINE_WIDTH = DIM_FONTSIZE / 7; // width of dimension lines
 DIM_HEIGHT = .01; // height of lines
 
 // refers to the size of the cross within a circle
 DIM_HOLE_CENTER = DIM_LINE_WIDTH * 6;
 
-// an approximation that sets the font size relative to the line widths
-DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
-
-
-
-OFFSET = .05; // added to the hole length to extend past the surface of the cube
 
 module arrow(arr_points, arr_length, height) {
     // arrow points to the left
@@ -203,17 +211,32 @@ module circle_center(radius, size=DIM_HOLE_CENTER, line_width=DIM_LINE_WIDTH) {
 function text_or_length(length, mytext) = (len(mytext) == 0)
     ? str(length): mytext;
 
+/**
+ * dim_text() - Add text label scaled to match size of dimension lines.
+ *
+ * Modifier for standard text() module. Performs two modification:
+ * - Scales text to match size of dimension lines.
+ * - Extrudes text into a 3D object so that dimensions don't mix 2D and 3D objects
+ *
+ * To use this modifier, place it immediately before a text() call.
+ */
+module scale_text()
+{
+    linear_extrude(DIM_HEIGHT, convexity=10)
+        scale([DIM_FONTSIZE/10, DIM_FONTSIZE/10])
+            children();
+}
+
 module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
                   mytext="") {
 
-    space = len(text_or_length(length, mytext)) * DIM_FONTSCALE * 7;
+    space = len(text_or_length(length, mytext)) * DIM_FONTSIZE;
 
     if (loc == DIM_CENTER) {
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
              left_arrow=true, right_arrow=false);
-        translate([(length) / 2 - space / 2 * .9, -DIM_FONTSCALE * 3, 0])
-        scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-        text(text_or_length(length, mytext));
+        translate([(length) / 2, 0]) scale_text()
+            text(text_or_length(length, mytext), halign="center", valign="center");
 
         translate([length / 2 + space / 2, 0, 0])
         line(length=length / 2 - space / 2, width=line_width, height=DIM_HEIGHT,
@@ -224,17 +247,15 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
             line(length=length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=true, right_arrow=true);
 
-            translate([-space, -DIM_FONTSCALE * 3, 0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text_or_length(length, mytext));
+            translate([-DIM_FONTSIZE, 0]) scale_text()
+                text(text_or_length(length, mytext), halign="right", valign="center");
         } else {
             if (loc == DIM_RIGHT) {
                 line(length=length, width=line_width, height=DIM_HEIGHT,
                      left_arrow=true, right_arrow=true);
 
-                translate([length + space, -DIM_FONTSCALE * 3, 0])
-                scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                text(text_or_length(length, mytext));
+                translate([length+DIM_FONTSIZE, 0]) scale_text()
+                    text(text_or_length(length, mytext), valign="center");
             } else {
                 if (loc == DIM_OUTSIDE) {
 
@@ -242,10 +263,8 @@ module dimensions(length, line_width=DIM_LINE_WIDTH, loc=DIM_CENTER,
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
                          left_arrow=true, right_arrow=false);
 
-                    translate([(length) / 2 - space / 2 * .9,
-                              -DIM_FONTSCALE * 3, 0])
-                    scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                    text(text_or_length(length, mytext));
+                    translate([(length) / 2, 0]) scale_text()
+                        text(text_or_length(length, mytext), halign="center", valign="center");
 
                     translate([length, 0, 0])
                     line(length=length / 2, width=line_width, height=DIM_HEIGHT,
@@ -267,8 +286,8 @@ module leader_line(angle, radius, angle_length, horz_line_length,
      * choice made by either DIM_RIGHT or DIM_LEFT
      */
 
-    text_length = len(text) * DIM_FONTSCALE * 6;
-    space = DIM_FONTSCALE * 6;
+    text_length = len(text) * DIM_FONTSIZE * 0.6;
+    space = DIM_FONTSIZE * 0.6;
 
     rotate([0, 0, angle])
     translate([radius, 0, 0])
@@ -283,9 +302,9 @@ module leader_line(angle, radius, angle_length, horz_line_length,
             line(length=horz_line_length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=false, right_arrow=false);
 
-            translate([(horz_line_length + space), -DIM_FONTSCALE * 3,  0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text);
+            // Using centered text so that the 'do_circle' feature looks correct
+            translate([horz_line_length + space + text_length/2, 0]) scale_text()
+                text(text, valign="center", halign="center");
 
             if (do_circle) {
                 translate([(horz_line_length + space + text_length/2),
@@ -303,11 +322,8 @@ module leader_line(angle, radius, angle_length, horz_line_length,
             line(length=horz_line_length, width=line_width, height=DIM_HEIGHT,
                  left_arrow=false, right_arrow=false);
 
-            translate([-(horz_line_length + space + text_length),
-                      -DIM_FONTSCALE * 3,
-                      0])
-            scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-            text(text);
+            translate([-(horz_line_length + space), 0]) scale_text()
+                text(text, halign="right", valign="center");
 
         }
     }
@@ -337,8 +353,6 @@ module titleblock(lines, descs, details) {
      *               [startx, starty, horz/vert, text, size]]
     */
 
-    DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
-
     for (line = lines) {
         translate([line[0] * DIM_LINE_WIDTH,
                     line[1] * DIM_LINE_WIDTH,
@@ -359,14 +373,10 @@ module titleblock(lines, descs, details) {
     for (line = descs) {
         translate([line[0] * DIM_LINE_WIDTH, line[1] * DIM_LINE_WIDTH, 0])
         if (line[2] == DIM_VERT) {
-            rotate([0, 0, 90])
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            rotate([0, 0, 90]) scale_text()
+                text(line[3], size=10*line[4]);
         } else {
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         }
     }
 
@@ -374,18 +384,16 @@ module titleblock(lines, descs, details) {
         translate([line[0] * DIM_LINE_WIDTH, line[1] * DIM_LINE_WIDTH, 0])
         if (line[2] == DIM_VERT) {
             rotate([0, 0, 90])
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         } else {
-            scale([DIM_FONTSCALE * line[4], DIM_FONTSCALE * line[4],
-                  DIM_FONTSCALE * line[4]])
-            text(line[3]);
+            scale_text() text(line[3], size=10*line[4]);
         }
     }
 
 }
 
+/* Scale examples to match size of dimension elements */
+DIM_SAMPLE_SCALE = DIM_FONTSIZE / 0.175;
 
 module sample_titleblock1() {
     /* sample titleblock
@@ -486,8 +494,6 @@ module sample_titleblock1() {
 
 module sample_revisionblock(revisions) {
 
-    DIM_FONTSCALE = DIM_LINE_WIDTH * .7;
-
     // revision block headings
     row_height = 15;
     revision_width = 100;
@@ -547,8 +553,7 @@ module sample_revisionblock(revisions) {
             for (col = [0:2]) {
                 translate([(cols[col] + desc_x) * DIM_LINE_WIDTH,
                     ((row + 1) * row_height + desc_y) * DIM_LINE_WIDTH, 0])
-                scale([DIM_FONTSCALE, DIM_FONTSCALE, DIM_FONTSCALE])
-                text(revisions[row][col]);
+                scale_text() text(revisions[row][col]);
             }
         }
 
@@ -679,16 +684,16 @@ module sample_titleblock2() {
 module sample_lines(){
     // sample lines
     union() {
-        line(length=2, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
+        line(length=2 * DIM_SAMPLE_SCALE, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
             left_arrow=false, right_arrow=false);
-        translate([0, -0.25, 0])
-        line(length=2, width=DIM_LINE_WIDTH, height=DIM_HEIGHT, left_arrow=true,
+        translate([0, -0.25 * DIM_SAMPLE_SCALE, 0])
+        line(length=2 * DIM_SAMPLE_SCALE, width=DIM_LINE_WIDTH, height=DIM_HEIGHT, left_arrow=true,
             right_arrow=false);
-        translate([0, -0.5, 0])
-        line(length=2, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
+        translate([0, -0.5 * DIM_SAMPLE_SCALE, 0])
+        line(length=2 * DIM_SAMPLE_SCALE, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
             left_arrow=false, right_arrow=true);
-        translate([0, -0.75, 0])
-        line(length=2, width=DIM_LINE_WIDTH, height=DIM_HEIGHT, left_arrow=true,
+        translate([0, -0.75 * DIM_SAMPLE_SCALE, 0])
+        line(length=2 * DIM_SAMPLE_SCALE, width=DIM_LINE_WIDTH, height=DIM_HEIGHT, left_arrow=true,
             right_arrow=true);
     }
 }
@@ -702,24 +707,24 @@ module sample_dimensions() {
         DIM_OUTSIDE = 3;
     */
 
-    length = 2.5;
+    length = 2.5 * DIM_SAMPLE_SCALE;
 
     // The following two lines are vertical lines that bracket the dimensions
     // left arrow
-    translate([0, -1.75, 0])
+    translate([0, -1.75 * DIM_SAMPLE_SCALE, 0])
     rotate([0, 0, 90])
     line(length=length, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
          left_arrow=false, right_arrow=false);
 
     // right arrow
-    translate([length, -1.75, 0])
+    translate([length, -1.75 * DIM_SAMPLE_SCALE, 0])
     rotate([0, 0, 90])
     line(length=length, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
          left_arrow=false, right_arrow=false);
 
     //  The following runs through all the dimension types
     for (i = [0:4]) {
-        translate([0, -.5 * i, 0])
+        translate([0, -.5 * i * DIM_SAMPLE_SCALE, 0])
         dimensions(length=length, line_width=DIM_LINE_WIDTH, loc=i);
     }
 }
@@ -737,24 +742,24 @@ module sample_dimensions_with_text(mytext) {
         lengths. This enables variable names to be passed in to drawings.
     */
 
-    length = 2.5;
+    length = 2.5 * DIM_SAMPLE_SCALE;
 
     // The following two lines are vertical lines that bracket the dimensions
     // left arrow
-    translate([0, -1.75, 0])
+    translate([0, -1.75 * DIM_SAMPLE_SCALE, 0])
     rotate([0, 0, 90])
     line(length=length, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
          left_arrow=false, right_arrow=false);
 
     // right arrow
-    translate([length, -1.75, 0])
+    translate([length, -1.75 * DIM_SAMPLE_SCALE, 0])
     rotate([0, 0, 90])
     line(length=length, width=DIM_LINE_WIDTH, height=DIM_HEIGHT,
          left_arrow=false, right_arrow=false);
 
     //  The following runs through all the dimension types
     for (i = [0:4]) {
-        translate([0, -.5 * i, 0])
+        translate([0, -.5 * i * DIM_SAMPLE_SCALE, 0])
         dimensions(length=length, line_width=DIM_LINE_WIDTH, loc=i,
                    mytext=mytext);
     }
@@ -763,10 +768,11 @@ module sample_dimensions_with_text(mytext) {
 
 module sample_leaderlines() {
 
-    radius = .25;
+    radius = .25 * DIM_SAMPLE_SCALE;
     for (i = [0:6]) {
-        leader_line(angle=i * 15, radius=.25, angle_length=(i * .25),
-                    horz_line_length=.5, direction=DIM_RIGHT,
+        leader_line(angle=i * 15, radius=.25 * DIM_SAMPLE_SCALE,
+                    angle_length=(i * .25 * DIM_SAMPLE_SCALE),
+                    horz_line_length=.5 * DIM_SAMPLE_SCALE, direction=DIM_RIGHT,
                     line_width=DIM_LINE_WIDTH,
                     text=str("leader line angle: ", i * 15 + 90),
                     do_circle=false
@@ -774,15 +780,16 @@ module sample_leaderlines() {
     }
 
     for (i = [1:7]) {
-        leader_line(angle=i * 20 + 90, radius=.25,
-                    angle_length=.75,
-                    horz_line_length=.5, direction=DIM_LEFT,
+        leader_line(angle=i * 20 + 90, radius=.25 * DIM_SAMPLE_SCALE,
+                    angle_length=.75 * DIM_SAMPLE_SCALE,
+                    horz_line_length=.5 * DIM_SAMPLE_SCALE, direction=DIM_LEFT,
                     line_width=DIM_LINE_WIDTH,
                     text=str("leader line angle: ", i * 20 + 90));
     }
     for (i = [1:4]) {
-        leader_line(angle=-i * 20, radius=.25, angle_length=1.5,
-                    horz_line_length=.25, direction=DIM_RIGHT,
+        leader_line(angle=-i * 20, radius=.25 * DIM_SAMPLE_SCALE,
+                    angle_length=1.5 * DIM_SAMPLE_SCALE,
+                    horz_line_length=.25 * DIM_SAMPLE_SCALE, direction=DIM_RIGHT,
                     line_width=DIM_LINE_WIDTH,
                     text=str(i),
                     do_circle=true
@@ -792,13 +799,13 @@ module sample_leaderlines() {
 
 module sample_circlecenter() {
 
-    radius = .25;
+    radius = .25 * DIM_SAMPLE_SCALE;
     difference() {
-        cube([1, 1, 1], center=true);
-        cylinder(h=1.1, r=radius, center=true, $fn=100);
+        cube([DIM_SAMPLE_SCALE, DIM_SAMPLE_SCALE, DIM_SAMPLE_SCALE], center=true);
+        cylinder(h=1.1 * DIM_SAMPLE_SCALE, r=radius, center=true, $fn=100);
     }
     color("Black")
-    translate([0, 0, .51])
+    translate([0, 0, .51 * DIM_SAMPLE_SCALE])
     circle_center(radius=radius, size=DIM_HOLE_CENTER,
         line_width=DIM_LINE_WIDTH);
 
@@ -807,23 +814,23 @@ module sample_circlecenter() {
 // uncomment these to sample
 sample_lines();
 //
-translate([-5.5, 0, 0])
+translate([-5.5 * DIM_SAMPLE_SCALE, 0, 0])
 sample_dimensions();
 
-translate([-11, 0, 0])
+translate([-11 * DIM_SAMPLE_SCALE, 0, 0])
 sample_dimensions_with_text(mytext="my variable");
 
 //
-translate([4, 0, 0])
+translate([4 * DIM_SAMPLE_SCALE, 0, 0])
 sample_circlecenter();
 //
-translate([-2, 3, 0])
+translate([-2 * DIM_SAMPLE_SCALE, 3 * DIM_SAMPLE_SCALE, 0])
 sample_leaderlines();
 
-translate([3, 4, 0])
+translate([3 * DIM_SAMPLE_SCALE, 4 * DIM_SAMPLE_SCALE, 0])
 sample_titleblock1();
 
-translate([0, -2, 0])
+translate([0 * DIM_SAMPLE_SCALE, -2 * DIM_SAMPLE_SCALE, 0])
 sample_titleblock2();
 
 
